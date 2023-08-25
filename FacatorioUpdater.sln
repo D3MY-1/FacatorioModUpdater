@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32929.385
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FacatorioUpdater", "FacatorioUpdater.csproj", "{EF7A847F-EC4F-467C-A970-3E1277889400}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EF7A847F-EC4F-467C-A970-3E1277889400}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF7A847F-EC4F-467C-A970-3E1277889400}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF7A847F-EC4F-467C-A970-3E1277889400}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF7A847F-EC4F-467C-A970-3E1277889400}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0F144285-288E-41FB-87D5-910B89A6AFF3}
+	EndGlobalSection
+EndGlobal
