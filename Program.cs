@@ -130,12 +130,12 @@ namespace FacatorioUpdater
                             DateTime currentTime = DateTime.Now;
                             if ((currentTime - lastUpdate).TotalMilliseconds >= updateInterval)
                             {
-                                PrintProgressBar(totalBytesRead, fileSize);
+                                Helper.PrintProgressBar(totalBytesRead, fileSize);
                                 lastUpdate = currentTime;
                             }
                             
                         }
-                        PrintProgressBar(totalBytesRead, fileSize);
+                        Helper.PrintProgressBar(totalBytesRead, fileSize);
                         Console.WriteLine();
                     }
                 }
@@ -171,46 +171,5 @@ namespace FacatorioUpdater
             return $"{mirror}{mod.name}/{ver.version}.zip";
         }
 
-
-
-        static void PrintProgressBar(long current, long total)
-        {
-            int progressBarWidth = 50;
-            double progressPercentage = (double)current / total;
-            int progressChars = (int)(progressBarWidth * progressPercentage);
-
-            Console.Write("\r[");
-
-            for (int i = 0; i < progressBarWidth; i++)
-            {
-                if (i < progressChars)
-                    Console.Write("#");
-                else
-                    Console.Write(" ");
-            }
-
-            string sizeString = FormatSize(current);
-            string totalSizeString = FormatSize(total);
-
-            Console.Write($"] {progressPercentage:P0} ({sizeString} / {totalSizeString})           ");
         }
-
-        static string FormatSize(long bytes)
-        {
-            string[] sizes = { "B", "KB", "MB", "GB" };
-            int order = 0;
-
-            while (bytes >= 1024 && order < sizes.Length - 1)
-            {
-                order++;
-                bytes /= 1024;
-            }
-
-            return $"{bytes:0.##} {sizes[order]}";
-        }
-        //static DownloadMods(List<Mod> mods)
-        //{
-
-        //}
     }
-}
