@@ -100,9 +100,9 @@ namespace FacatorioUpdater
             DateTime lastUpdate = DateTime.MinValue;
 
             Mod.Version ver = mod.WantedVersion != null ? mod.WantedVersion : mod.RecentVersion;
-            string fileName = $"{mod.name}{ver.version}.zip";
+            string fileName = $"{mod.name}_{ver.version}.zip";
             string url = GetDownloadLink(Mirror, mod, ver);
-            string downloadPatch = $"{Path.GetDirectoryName(Assembly.GetEntryAssembly().Location)}";
+            string downloadPatch = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             try
             {
                 
