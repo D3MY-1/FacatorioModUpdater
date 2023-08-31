@@ -150,9 +150,19 @@ namespace FacatorioUpdater
             Console.CursorVisible = true;
             return true;
         }
-        async static Task<bool> DownloadMods(HttpClient client, string mirror, List<Mod> mods)
+        async static Task<List<Mod>> DownloadMods(HttpClient client, string mirror, List<Mod> mods)
         {
-            return false;
+            List<Mod> failed = new List<Mod>();
+            for (int i = 0; i < mods.Count; i++)
+            {
+                Console.Clear();
+                Console.WriteLine($"Downloading mod ({i + 1}/{mods.Count})");
+                if(!await DownloadMod(client, mods[i], mirror))
+        {
+                    failed.Add(mods[i]);
+                }
+            }
+            return failed;
         }
         static string GetDownloadLink(string mirror,Mod mod,Mod.Version ver )
         {
@@ -160,6 +170,8 @@ namespace FacatorioUpdater
                 throw new Exception("Mod is not initialized!!");
             return $"{mirror}{mod.name}/{ver.version}.zip";
         }
+
+
 
         static void PrintProgressBar(long current, long total)
         {
