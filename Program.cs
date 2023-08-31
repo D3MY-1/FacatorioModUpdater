@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace FacatorioUpdater
 {
@@ -22,45 +23,48 @@ namespace FacatorioUpdater
         const string Mirror = "https://mods-storage.re146.dev/";
         static async Task Main(string[] args)
         {
-            string[] modNames = {"Aircraft","aai-zones"};
+            string[] modNames = {"Aircraft","aai-zones", "fart-mod", "IndustrialRevolution3MirroredRecipes" };
 
             Console.WriteLine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location));
-
+            string downloadPatch = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             using (HttpClient client = new HttpClient())
             {
                 //client.Timeout = TimeSpan.FromSeconds(30);
                 client.DefaultRequestHeaders.Add("Cache-Control", "no-cache, no-store, must-revalidate");
                 client.DefaultRequestHeaders.Add("Pragma", "no-cache");
 
-                Mod a = await GetModInfo(client, modNames[1]);
-                await DownloadMod(client, a, Mirror);
-                try
+                List<Mod> toUpdate = new List<Mod>();
+                var inf = Helper.GetModNamesFromDir(downloadPatch);
+                Console.WriteLine("Mods to update :");
+                foreach (var i in inf)
                 {
-                    //string response = await client.GetStringAsync(apiUrl);
+                    Mod info = await GetModInfo(client,i.Name);
+                    if(Helper.IsVersionSmaller(i.Version, info.RecentVersion.version))
+                    {
+                        toUpdate.Add(info);
+                        Console.WriteLine(i.Name);
+                    }
                     
-                    //JObject modInfo = JObject.Parse(response);
-
-                    //Mod a = new Mod(modInfo);
-
-                    //PrintJObject(modInfo);
-                    //Console.ReadKey();
-
-                    Console.WriteLine($"Mod Title: {a.title}");
-                    Console.WriteLine($"Mod Name: {a.name}");
-                    Console.WriteLine($"Description: {a.description}");
-                    Console.WriteLine($"Author: {a.author}");
-                    Console.WriteLine($"Downloads: {a.downloadCounter}");
-                    Console.WriteLine($"Most recent version is {a.RecentVersion.version}");
-                    Console.WriteLine($"For factorio version {a.RecentVersion.factorioVer} or higher");
-                    Console.WriteLine($"Download url for last version{a.versions.Last().downURL}");
                 }
-                catch (HttpRequestException ex)
+
+                var failed = await DownloadMods(client, Mirror, toUpdate);
+
+                if (failed.Count > 0)
                 {
-                    Console.WriteLine($"Error fetching mod information: {ex.Message}");
+                    Console.WriteLine($"{failed.Count} of download mods failed there are a list of them!");
+                    foreach (Mod mod in failed)
+                    {
+                        Console.WriteLine($"Name : {mod.name} Download link {GetDownloadLink(Mirror, mod, mod.WantedVersion)}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Downloaded sucesfully!");
                 }
             }
             Console.ReadKey();
-            Console.WriteLine();
+            //Console.WriteLine();
+            
             
         }
         static void PrintJObject(JObject obj, string indent = "")
@@ -75,6 +79,20 @@ namespace FacatorioUpdater
                 }
             }
         }
+        static void PrintModInfo(Mod mod)
+        {
+            if(mod.IsInitialized)
+            {
+                Console.WriteLine($"Mod Title: {mod.title}");
+                Console.WriteLine($"Mod Name: {mod.name}");
+                Console.WriteLine($"Description: {mod.description}");
+                Console.WriteLine($"Author: {mod.author}");
+                Console.WriteLine($"Downloads: {mod.downloadCounter}");
+                Console.WriteLine($"Most recent mod version is {mod.RecentVersion.version}");
+                Console.WriteLine($"For factorio version {mod.RecentVersion.factorioVer} or higher");
+            }
+        }
+
 
         async static Task<Mod> GetModInfo(HttpClient client,string name)
         {
@@ -94,6 +112,17 @@ namespace FacatorioUpdater
             }
             return null;
         }
+        async static Task<List<Mod>> GetModsInfo(HttpClient client,List<string> names)
+        {
+            List<Mod> modList = new List<Mod>();
+            foreach(string name in names)
+            {
+                modList.Add(await GetModInfo(client, name));
+            }
+            return modList;
+        }
+
+
         async static Task<bool> DownloadMod(HttpClient client,Mod mod,string mirror)
         {
             const int updateInterval = 10;
@@ -110,7 +139,7 @@ namespace FacatorioUpdater
                 if (response.IsSuccessStatusCode)
                 {
                     using (Stream contentStream = await response.Content.ReadAsStreamAsync())
-                    using (FileStream fileStream = File.Create(Path.Combine(downloadPatch, fileName)))
+                    using (FileStream fileStream = System.IO.File.Create(Path.Combine(downloadPatch, fileName)))
                     {
                         const int bufferSize = 8192;
                         byte[] buffer = new byte[bufferSize];
@@ -158,7 +187,7 @@ namespace FacatorioUpdater
                 Console.Clear();
                 Console.WriteLine($"Downloading mod ({i + 1}/{mods.Count})");
                 if(!await DownloadMod(client, mods[i], mirror))
-        {
+                {
                     failed.Add(mods[i]);
                 }
             }
@@ -171,5 +200,5 @@ namespace FacatorioUpdater
             return $"{mirror}{mod.name}/{ver.version}.zip";
         }
 
-        }
     }
+}
