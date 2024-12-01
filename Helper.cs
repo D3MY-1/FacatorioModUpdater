@@ -1,19 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FactorioUpdater
 {
     public class Helper
     {
 
-        public static List<(string Name, string Version)> GetModNamesFromDir(string dir)
+        public static Dictionary<string, string> GetModNamesFromDir(string dir)
         {
             string searchPattern = "*_*.*.*.zip";
-            List<(string Name, string Version)> modInfoList = new List<(string, string)>();
+            Dictionary<string, string> modInfoList = new Dictionary<string, string>();
             string[] files = Directory.GetFiles(dir, searchPattern);
             foreach (string file in files)
             {
@@ -21,10 +18,48 @@ namespace FactorioUpdater
                 string[] parts = fileName.Split('_');
                 if (parts.Length == 2)
                 {
-                    modInfoList.Add((parts[0], parts[1]));
+                    if (modInfoList.ContainsKey(parts[0]) && IsVersionSmaller(parts[1], modInfoList[parts[0]]))
+                    {
+                        continue;
+                    }
+
+                    modInfoList[parts[0]] = parts[1];
                 }
             }
             return modInfoList;
+        }
+
+        public static void MoveMods(List<string> names, string from, string to)
+        {
+            try
+            {
+                // Create the destination directory if it doesn't exist
+                if (!Directory.Exists(to))
+                {
+                    Directory.CreateDirectory(to);
+                }
+
+                foreach (string modNameWithoutVersion in names)
+                {
+                    // Filter the list of files in the source directory based on the mod name
+                    string[] matchingFiles = Directory.GetFiles(from, $"{modNameWithoutVersion}_*.zip");
+
+                    foreach (string sourcePath in matchingFiles)
+                    {
+                        string modName = Path.GetFileName(sourcePath);
+
+                        string destinationPath = Path.Combine(to, modName);
+
+                        // Move the mod file from the source directory to the destination directory
+                        File.Move(sourcePath, destinationPath);
+                        Console.WriteLine($"Moved '{modName}' from '{from}' to '{to}'");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error moving mods: {ex.Message}");
+            }
         }
 
         public static void PrintProgressBar(long current, long total)

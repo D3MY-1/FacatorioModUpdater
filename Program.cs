@@ -1,21 +1,15 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 using System.IO;
-using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Runtime.ConstrainedExecution;
-using System.Text;
 using System.Threading.Tasks;
-using static System.Net.WebRequestMethods;
 
 namespace FactorioUpdater
 {
 
-    
+
     internal class Program
     {
 
@@ -23,10 +17,15 @@ namespace FactorioUpdater
         const string Mirror = "https://mods-storage.re146.dev/";
         static async Task Main(string[] args)
         {
-            string[] modNames = {"Aircraft","aai-zones", "fart-mod", "IndustrialRevolution3MirroredRecipes" };
+
+
+
+
 
             Console.WriteLine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location));
-            string downloadPatch = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            string currDir = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            string downloadPatch = Path.Combine(currDir, "Downloaded_Mods");
+            string BackupPath = Path.Combine(currDir, "Old_Mods");
             using (HttpClient client = new HttpClient())
             {
                 //client.Timeout = TimeSpan.FromSeconds(30);
@@ -34,20 +33,31 @@ namespace FactorioUpdater
                 client.DefaultRequestHeaders.Add("Pragma", "no-cache");
 
                 List<Mod> toUpdate = new List<Mod>();
-                var inf = Helper.GetModNamesFromDir(downloadPatch);
+                Dictionary<string, string> inf = Helper.GetModNamesFromDir(currDir);// Used dictionaary to avoid duplicates
                 Console.WriteLine("Mods to update :");
-                foreach (var i in inf)
+                List<string> move = new List<string>();
+
+                foreach (var i in inf) // key represents mod name value represents mod version
                 {
-                    Mod info = await GetModInfo(client,i.Name);
-                    if(Helper.IsVersionSmaller(i.Version, info.RecentVersion.version))
+                    Mod info = await GetModInfo(client, i.Key);
+                    if (Helper.IsVersionSmaller(i.Value, info.RecentVersion.version))
                     {
                         toUpdate.Add(info);
-                        Console.WriteLine(i.Name);
+                        move.Add(i.Key);
+
+                        Console.WriteLine(i.Key);
                     }
-                    
+
                 }
 
-                var failed = await DownloadMods(client, Mirror, toUpdate);
+                Console.WriteLine("Press enter to start update process.");
+                Console.ReadKey();
+
+                Directory.CreateDirectory(BackupPath);
+                Directory.CreateDirectory(downloadPatch);
+                Helper.MoveMods(move, currDir, BackupPath);
+
+                var failed = await DownloadMods(client, Mirror, toUpdate, downloadPatch);
 
                 if (failed.Count > 0)
                 {
@@ -64,8 +74,8 @@ namespace FactorioUpdater
             }
             Console.ReadKey();
             //Console.WriteLine();
-            
-            
+
+
         }
         static void PrintJObject(JObject obj, string indent = "")
         {
@@ -81,7 +91,7 @@ namespace FactorioUpdater
         }
         static void PrintModInfo(Mod mod)
         {
-            if(mod.IsInitialized)
+            if (mod.IsInitialized)
             {
                 Console.WriteLine($"Mod Title: {mod.title}");
                 Console.WriteLine($"Mod Name: {mod.name}");
@@ -94,7 +104,7 @@ namespace FactorioUpdater
         }
 
 
-        async static Task<Mod> GetModInfo(HttpClient client,string name)
+        async static Task<Mod> GetModInfo(HttpClient client, string name)
         {
             string apiUrl = $"https://mods.factorio.com/api/mods/{name}";
 
@@ -112,10 +122,10 @@ namespace FactorioUpdater
             }
             return null;
         }
-        async static Task<List<Mod>> GetModsInfo(HttpClient client,List<string> names)
+        async static Task<List<Mod>> GetModsInfo(HttpClient client, List<string> names)
         {
             List<Mod> modList = new List<Mod>();
-            foreach(string name in names)
+            foreach (string name in names)
             {
                 modList.Add(await GetModInfo(client, name));
             }
@@ -123,7 +133,7 @@ namespace FactorioUpdater
         }
 
 
-        async static Task<bool> DownloadMod(HttpClient client,Mod mod,string mirror)
+        async static Task<bool> DownloadMod(HttpClient client, Mod mod, string mirror, string downloadPatch)
         {
             const int updateInterval = 10;
             DateTime lastUpdate = DateTime.MinValue;
@@ -131,10 +141,9 @@ namespace FactorioUpdater
             Mod.Version ver = mod.WantedVersion != null ? mod.WantedVersion : mod.RecentVersion;
             string fileName = $"{mod.name}_{ver.version}.zip";
             string url = GetDownloadLink(Mirror, mod, ver);
-            string downloadPatch = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             try
             {
-                
+
                 HttpResponseMessage response = await client.GetAsync(url);
                 if (response.IsSuccessStatusCode)
                 {
@@ -162,7 +171,7 @@ namespace FactorioUpdater
                                 Helper.PrintProgressBar(totalBytesRead, fileSize);
                                 lastUpdate = currentTime;
                             }
-                            
+
                         }
                         Helper.PrintProgressBar(totalBytesRead, fileSize);
                         Console.WriteLine();
@@ -179,23 +188,23 @@ namespace FactorioUpdater
             Console.CursorVisible = true;
             return true;
         }
-        async static Task<List<Mod>> DownloadMods(HttpClient client, string mirror, List<Mod> mods)
+        async static Task<List<Mod>> DownloadMods(HttpClient client, string mirror, List<Mod> mods, string downloadPatch)
         {
             List<Mod> failed = new List<Mod>();
             for (int i = 0; i < mods.Count; i++)
             {
                 Console.Clear();
                 Console.WriteLine($"Downloading mod ({i + 1}/{mods.Count})");
-                if(!await DownloadMod(client, mods[i], mirror))
+                if (!await DownloadMod(client, mods[i], mirror, downloadPatch))
                 {
                     failed.Add(mods[i]);
                 }
             }
             return failed;
         }
-        static string GetDownloadLink(string mirror,Mod mod,Mod.Version ver )
+        static string GetDownloadLink(string mirror, Mod mod, Mod.Version ver)
         {
-            if(!mod.IsInitialized)
+            if (!mod.IsInitialized)
                 throw new Exception("Mod is not initialized!!");
             return $"{mirror}{mod.name}/{ver.version}.zip";
         }
