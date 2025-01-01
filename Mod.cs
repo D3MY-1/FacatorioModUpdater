@@ -3,18 +3,16 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Runtime.InteropServices.WindowsRuntime;
 
 internal class Mod
 {
     public class Version
     {
-        
-        public string version { get;  set; }
-        public string downURL { get;  set; }
-        public string fileName { get;  set; }
-        public string factorioVer { get;  set; }
+
+        public string version { get; set; }
+        public string downURL { get; set; }
+        public string fileName { get; set; }
+        public string factorioVer { get; set; }
     }
 
     public string title { get; private set; }
